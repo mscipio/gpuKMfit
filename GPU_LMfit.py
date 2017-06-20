@@ -43,10 +43,10 @@ class KineticModelFitterLM():
         self.eps            = np.float32(1e-16)
         self.ll             = np.float32(0.0)                           # weight lambda (LM algorithm)
         self.bb             = np.float32(0.0)                           # weight beta (MRF prior importance)
-	self.gamma          = np.float32(0.0)                           # weight gamma (Thikonov term in MRF prior)
-	self.func_path      = os.path.dirname(os.path.abspath(__file__))
-	self.kernel_models  = open(self.func_path+'/cuda_kernels/models.cu').read()
-	self.kernel_priors  = open(self.func_path+'/cuda_kernels/priors.cu').read()
+    	self.gamma          = np.float32(0.0)                           # weight gamma (Thikonov term in MRF prior)
+    	self.func_path      = os.path.dirname(os.path.abspath(__file__))
+    	self.kernel_models  = open(self.func_path+'/cuda_kernels/models.cu').read()
+    	self.kernel_priors  = open(self.func_path+'/cuda_kernels/priors.cu').read()
         self._init_gpu_()                                               # allocate GPU memory
 
     def _init_gpu_(self):
@@ -54,19 +54,19 @@ class KineticModelFitterLM():
 
         self.y_gpu     = gpuarray.empty( (self.N, self.Nt) , np.float32 )         # observations
         self.f_gpu     = gpuarray.zeros( (self.N, self.Nt) , np.float32 )         # model evaluation
-	self.mask_gpu  = gpuarray.zeros( self.shape , np.float32 )
+        self.mask_gpu  = gpuarray.zeros( self.shape , np.float32 )
 
         self.par_gpu   = gpuarray.empty( (self.N, self.D, 1) , np.float32 )       # parameters
-	self.par_out   = np.zeros( (self.N, self.D) )
+        self.par_out   = np.zeros( (self.N, self.D) )
         self.dk_gpu    = gpuarray.empty( 1, np.float32 )
 
         self.g_gpu     = gpuarray.empty( (self.N, self.D, 1), np.float32 )        # gradient
         self.g_arr     = bptrs(self.g_gpu)
-	self.prior_gpu = gpuarray.empty( (self.N, self.D, 1), np.float32 )        # MRF prior (same shape as self.g_gpu)
+    	self.prior_gpu = gpuarray.empty( (self.N, self.D, 1), np.float32 )        # MRF prior (same shape as self.g_gpu)
         self.delta_gpu = gpuarray.empty( (self.N, self.D, 1), np.float32 )        # gradient
         self.delta_arr = bptrs(self.delta_gpu)
 
-	self.Diff_gpu  = gpuarray.empty( (self.N, self.Nt, 1), np.float32 )       # self.y_gpu - self.f_gpu
+    	self.Diff_gpu  = gpuarray.empty( (self.N, self.Nt, 1), np.float32 )       # self.y_gpu - self.f_gpu
         self.Diff_arr  = bptrs(self.Diff_gpu)
         self.J_gpu     = gpuarray.empty( (self.N, self.Nt, self.D), np.float32 )  # Jacobian
         self.J_arr     = bptrs(self.J_gpu)
@@ -86,7 +86,7 @@ class KineticModelFitterLM():
         start = timeit.default_timer()
 
         # 1- compute model & jacobian
-	grid_dim = np.int(np.ceil((self.N+self.B-1)/self.B))
+    	grid_dim = np.int(np.ceil((self.N+self.B-1)/self.B))
         self.parallel_analytic_models(block_dim=(self.B,1,1), grid_dim=(grid_dim,1,1))
         elapsed_sim = timeit.default_timer() - start
         # 1a- Remove sparse voxels from parametric maps
@@ -97,9 +97,9 @@ class KineticModelFitterLM():
         # 2- evaluate error - keep error history
         self.Diff_gpu[:,:,0] = self.y_gpu - self.f_gpu
 
-	"""figure(figsize=[14,6])
-	for par in range(5):
-	  subplot(2,3,par+1); plot(self.time_gpu.get(),self.J_gpu.get()[self.N-1,:,par])"""
+    	"""figure(figsize=[14,6])
+    	for par in range(5):
+    	  subplot(2,3,par+1); plot(self.time_gpu.get(),self.J_gpu.get()[self.N-1,:,par])"""
 
 
         # 3- compute approximate Hessians
@@ -126,9 +126,9 @@ class KineticModelFitterLM():
                                   self.J_arr.gpudata, self.D,
                                   beta, self.g_arr.gpudata, 1, self.N)
 
-	# 6- compute derivative of smoothing gaussian MRF log prior
-	self.compute_prior(block_dim=(self.B,1,1,), grid_dim=(np.int(np.ceil((self.N+self.B-1)/self.B)),1,1))
-	self.g_gpu  += self.prior_gpu
+    	# 6- compute derivative of smoothing gaussian MRF log prior
+    	self.compute_prior(block_dim=(self.B,1,1,), grid_dim=(np.int(np.ceil((self.N+self.B-1)/self.B)),1,1))
+    	self.g_gpu  += self.prior_gpu
 
         # 7- compute preconditioned gradient
         # use batched matrix vector multiplication to compute  self.g_gpu = inner( self.Hinv_gpu, self.g_gpu )
@@ -140,22 +140,22 @@ class KineticModelFitterLM():
 
         # 8- update parameters
         #self.par_gpu += self.delta_gpu
-	# TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO: do this on GPU
-	par_new = self.par_gpu.get() + self.delta_gpu.get()
-	par_new[par_new<=0] = self.eps
-	self.par_gpu = gpuarray.to_gpu(np.asarray(par_new, dtype=np.float32))
-	# TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO: do this on GPU
+    	# TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO: do this on GPU
+    	par_new = self.par_gpu.get() + self.delta_gpu.get()
+    	par_new[par_new<=0] = self.eps
+    	self.par_gpu = gpuarray.to_gpu(np.asarray(par_new, dtype=np.float32))
+    	# TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO: do this on GPU
 
         if verbose:
-	    elapsed_iter = timeit.default_timer() - start
+            elapsed_iter = timeit.default_timer() - start
             print '-------------------------------------------'
             print 'simulation time: '+ str(elapsed_sim)+' sec'
             #print "par_GPU_new"+str(self.par_gpu[0,:,0])
             print 'iteration time: '+ str(elapsed_iter)+' sec'
             print '-------------------------------------------'
-	else:
-	    #print "..."
-	    pass
+    	else:
+    	    #print "..."
+    	    pass
 
     def parallel_analytic_models(self, block_dim=None, grid_dim=None):
 
@@ -172,8 +172,8 @@ class KineticModelFitterLM():
         # get the kernel function from the compiled module
         self.model_fun = mod.get_function(self.model)
 
-	# TODO fill output array with zeros here instead than in the kernel_code_template
-	# ES. self.f_gpu.fill(0
+    	# TODO fill output array with zeros here instead than in the kernel_code_template
+    	# ES. self.f_gpu.fill(0
 
         # call the kernel on the card
         self.model_fun(
@@ -306,32 +306,32 @@ class KineticModelFitterLM():
         self.Nt = np.asarray(scanTime).shape[1]
         self.N  = np.asarray(observations).shape[0]
         self.ll = float32(l)
-	if len(b) == 1:
-	  self.bb = gpuarray.to_gpu(np.asarray([b]*self.D, dtype=np.float32))
-	elif len(b) == self.D:
-	  self.bb = gpuarray.to_gpu(np.asarray(b, dtype=np.float32))
-	else:
-	  self.bb = gpuarray.to_gpu(np.asarray([[0.1e0,0.1e0,0.1e0,0.1e0,0.1e0]]*self.D, dtype=np.float32))
-	  print "Wrong size for beta array (prior weight)"
-	self.gamma = float32(g)
-	if len(t) == 1:
-	  self.thresh = gpuarray.to_gpu(np.asarray([t]*self.D, dtype=np.float32))
-	elif len(t) == self.D:
-	  self.thresh = gpuarray.to_gpu(np.asarray(t, dtype=np.float32))
-	else:
-	  self.thresh = gpuarray.to_gpu(np.asarray([[1e0,1e1,1e1,1e0,0]]*self.D, dtype=np.float32))
-	  print "Wrong size for thresh array (sparsity threshold)"
-	self.model = model
-	self.prior = prior
-        self._init_gpu_()
-        self.set_time(scanTime)
-        self.set_observations(observations)
-        self.set_input_function(IF, scanTime, IFparams,IF_model)
-        self.set_input_params(vB, K1, k2, k3, k4, dk)
-	if mask is  None:
-	  self.mask_gpu = gpuarray.to_gpu(np.asarray(np.ones(self.shape), dtype=np.float32))
-	else:
-	  self.mask_gpu = gpuarray.to_gpu(np.asarray(mask, dtype=np.float32))
+    	if len(b) == 1:
+    	  self.bb = gpuarray.to_gpu(np.asarray([b]*self.D, dtype=np.float32))
+    	elif len(b) == self.D:
+    	  self.bb = gpuarray.to_gpu(np.asarray(b, dtype=np.float32))
+    	else:
+    	  self.bb = gpuarray.to_gpu(np.asarray([[0.1e0,0.1e0,0.1e0,0.1e0,0.1e0]]*self.D, dtype=np.float32))
+    	  print "Wrong size for beta array (prior weight)"
+    	self.gamma = float32(g)
+    	if len(t) == 1:
+    	  self.thresh = gpuarray.to_gpu(np.asarray([t]*self.D, dtype=np.float32))
+    	elif len(t) == self.D:
+    	  self.thresh = gpuarray.to_gpu(np.asarray(t, dtype=np.float32))
+    	else:
+    	  self.thresh = gpuarray.to_gpu(np.asarray([[1e0,1e1,1e1,1e0,0]]*self.D, dtype=np.float32))
+    	  print "Wrong size for thresh array (sparsity threshold)"
+    	self.model = model
+    	self.prior = prior
+            self._init_gpu_()
+            self.set_time(scanTime)
+            self.set_observations(observations)
+            self.set_input_function(IF, scanTime, IFparams,IF_model)
+            self.set_input_params(vB, K1, k2, k3, k4, dk)
+    	if mask is  None:
+    	  self.mask_gpu = gpuarray.to_gpu(np.asarray(np.ones(self.shape), dtype=np.float32))
+    	else:
+    	  self.mask_gpu = gpuarray.to_gpu(np.asarray(mask, dtype=np.float32))
 
     def set_observations(self, observations):
         """Set noisy observations to be fit."""
@@ -341,43 +341,43 @@ class KineticModelFitterLM():
     def set_input_function(self, IF, scanTime, IFparams, IF_model=2):
         """Import input function and IF parameters for the choosen model.
         You can either input those parameters or ask to fit the choosen model to the experimental data"""
-	if (IFparams == []) or (IFparams==None) :
-	  params = ifm.fit(IF,scanTime, model=IF_model)
-	  IFfit  = ifm.simulate(scanTime, params, model=IF_model)
-	  self.IFparams_gpu    = gpuarray.to_gpu(np.asarray(params, dtype=np.float32))
-	  self.IF_gpu          = gpuarray.to_gpu(np.asarray(IFfit,  dtype=np.float32))
+    	if (IFparams == []) or (IFparams==None) :
+    	  params = ifm.fit(IF,scanTime, model=IF_model)
+    	  IFfit  = ifm.simulate(scanTime, params, model=IF_model)
+    	  self.IFparams_gpu    = gpuarray.to_gpu(np.asarray(params, dtype=np.float32))
+    	  self.IF_gpu          = gpuarray.to_gpu(np.asarray(IFfit,  dtype=np.float32))
 
-	  print "IF PARAMETERS "
-	  print "----------------------------------------------------------------"
-	  print "delay: "+ str(self.IFparams_gpu.get()[0])
-	  if IF_model==2 or IF_model == 3:
-	    print "amplitudes: "+ str(self.IFparams_gpu.get()[1:4])
-	    print "time constants: "+ str(self.IFparams_gpu.get()[4:])
-	  elif IF_model==4 or IF_model==6:
-	    print "amplitudes: "+ str(self.IFparams_gpu.get()[1:3])
-	    print "time constants: "+ str(self.IFparams_gpu.get()[3:])
-	  elif IF_model == 5:
-	    print "amplitudes: "+ str(self.IFparams_gpu.get()[1])
-	    print "time constants: "+ str(self.IFparams_gpu.get()[2:])
-	  print "----------------------------------------------------------------"
+    	  print "IF PARAMETERS "
+    	  print "----------------------------------------------------------------"
+    	  print "delay: "+ str(self.IFparams_gpu.get()[0])
+    	  if IF_model==2 or IF_model == 3:
+    	    print "amplitudes: "+ str(self.IFparams_gpu.get()[1:4])
+    	    print "time constants: "+ str(self.IFparams_gpu.get()[4:])
+    	  elif IF_model==4 or IF_model==6:
+    	    print "amplitudes: "+ str(self.IFparams_gpu.get()[1:3])
+    	    print "time constants: "+ str(self.IFparams_gpu.get()[3:])
+    	  elif IF_model == 5:
+    	    print "amplitudes: "+ str(self.IFparams_gpu.get()[1])
+    	    print "time constants: "+ str(self.IFparams_gpu.get()[2:])
+    	  print "----------------------------------------------------------------"
 
-	  plot(self.time_gpu.get(),IF,'r*-' )
-	  plot(self.time_gpu.get(),IFfit,'b-' )
-	  suptitle("Input function model", fontsize="18", fontweight="bold")
-	  show()
-        else:
-	  self.IFparams_gpu    = gpuarray.to_gpu(np.asarray(IFparams, dtype=np.float32))
-	  self.IF_gpu          = gpuarray.to_gpu(np.asarray(IF,       dtype=np.float32))
+    	  plot(self.time_gpu.get(),IF,'r*-' )
+    	  plot(self.time_gpu.get(),IFfit,'b-' )
+    	  suptitle("Input function model", fontsize="18", fontweight="bold")
+    	  show()
+      else:
+    	  self.IFparams_gpu    = gpuarray.to_gpu(np.asarray(IFparams, dtype=np.float32))
+    	  self.IF_gpu          = gpuarray.to_gpu(np.asarray(IF,       dtype=np.float32))
 
     def set_time(self, scanTime):
-	if np.asarray(scanTime).max()>180:
-	   scanTime = np.asarray(scanTime)/60; #time has to be in minutes
+    	if np.asarray(scanTime).max()>180:
+    	   scanTime = np.asarray(scanTime)/60; #time has to be in minutes
         self.time_gpu       = gpuarray.to_gpu(np.asarray(np.mean(scanTime,0), dtype=np.float32))
 
     def set_input_params(self, vB=0.01, K1=0.1, k2=0.1, k3=0.01, k4=0.01, dk=np.log(2)/109.8):
         """Initialize the parameters of the kinetic model. """
         # TODO: allow to input a volume of initial parameters (also for simulation purpose)
-	self.k2aux(vB+self.eps, K1+self.eps, k2+self.eps, k3+self.eps, k4+self.eps) # self.par_gpu is defined in the auxiliary variables domain, not in the 'k' domain
+        self.k2aux(vB+self.eps, K1+self.eps, k2+self.eps, k3+self.eps, k4+self.eps) # self.par_gpu is defined in the auxiliary variables domain, not in the 'k' domain
         self.dk_gpu   = gpuarray.to_gpu(np.asarray(dk, dtype=np.float32))
 
     def __del__(self):
