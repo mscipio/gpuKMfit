@@ -11,11 +11,10 @@ import timeit
 from string import Template
 from pylab import *
 import IFmodels as ifm
-
-culinalg.init()
 import string
 import time
 
+culinalg.init()
 start = drv.Event()
 end = drv.Event()
 
