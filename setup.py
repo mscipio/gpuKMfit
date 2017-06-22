@@ -41,7 +41,7 @@ setup(
         "Development Status :: 2 - Pre-Alpha",
         "Environment :: Other Environment",
         "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: BSD License",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
         "Topic :: Scientific/Engineering :: Medical Science Apps.",
         "Topic :: Scientific/Engineering :: Mathematics",
