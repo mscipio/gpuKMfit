@@ -62,7 +62,6 @@ __global__ void gaussian_MRF_prior(float *k4D, float *prior, float *beta, float 
 				sum += (m+gamma)*k4D[INDEX_4D(x, y, z, dd)];
 				prior[INDEX_PARAM(idx,dd)] -= beta[dd]*sum;
 			}
-
 		}
 	}
 }
