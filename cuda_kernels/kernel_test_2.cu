@@ -104,31 +104,43 @@ __device__ void bicomp_2expIF_noDecay(unsigned int idx, float *aux_par, float *i
 					Jl[tt] =0;
 				}
 				for (uint jj=0; jj<2; ++jj) {
-					delta  = 0;
+					delta  = 1.0f / (p[ii+1]+inputfuns[3+jj]);
 
 					for (uint tt=0; tt<${T}; ++tt) {
 						if (times[tt]>=inputfuns[0]) {
-							sum[tt] += idx;
-							Jb[tt]  += idx;
-							Jl[tt]  += idx;
+							sum[tt] += Ahat[jj] * (delta) * ( exp(inputfuns[3+jj]*(times[tt]-inputfuns[0]))-exp(-p[ii+1]*(times[tt]-inputfuns[0])) );
+							Jb[tt]  += Ahat[jj] * (delta) * ( exp(inputfuns[3+jj]*(times[tt]-inputfuns[0]))-exp(-p[ii+1]*(times[tt]-inputfuns[0])) );
+							Jl[tt]  += Abar[jj] * (delta) * (delta * ( exp(-p[ii+1]*(times[tt]-inputfuns[0]))-exp(inputfuns[3+jj]*(times[tt]-inputfuns[0])))  +  (times[tt]-inputfuns[0]) * exp(-p[ii+1]*(times[tt]-inputfuns[0])));
 						}
 					}
 				}
 
 				for (uint tt=0; tt<${T}; ++tt) {
 					if (times[tt]>=inputfuns[0]) {
-						TAC[tt] += sum[tt];
-						jac[INDEX_JAC_TIME(idx,tt,ii+1)] = Jb[tt];
-						jac[INDEX_JAC_TIME(idx,tt,ii+2)] = Jl[tt];
+						TAC[tt] += p[ii] * (sum[tt] + ((inputfuns[1]*(times[tt]-inputfuns[0]))*delta0) *exp(inputfuns[3]*(times[tt]-inputfuns[0])));
+						jac[INDEX_JAC_TIME(idx,tt,ii+1)] = (1-aux_par[INDEX_PARAM(idx,0)]) * (Jb[tt] + ((inputfuns[1]*(times[tt]-inputfuns[0]))*delta0) *exp(inputfuns[3]*(times[tt]-inputfuns[0])));
+						jac[INDEX_JAC_TIME(idx,tt,ii+2)] = (1-aux_par[INDEX_PARAM(idx,0)]) * (p[ii] * (Jl[tt] + ( exp(-p[ii+1]*(times[tt]-inputfuns[0]))-exp(inputfuns[3]*(times[tt]-inputfuns[0]))) * (inputfuns[1] * (delta0*delta0)) * ((times[tt]-inputfuns[0]) + 2*delta0 )  ));
 					}
 				}
 
 			}
 			//__syncthreads();
 			for (uint tt=0; tt<${T}; ++tt) {
-				jac[INDEX_JAC_TIME(idx,tt,0)] = idx;
-				//TAC[tt]  = ((1-aux_par[INDEX_PARAM(idx,0)]) * TAC[tt]) + (aux_par[INDEX_PARAM(idx,0)] * IF[tt]);
+				jac[INDEX_JAC_TIME(idx,tt,0)] = IF[tt] - TAC[tt];
+				TAC[tt]  = ((1-aux_par[INDEX_PARAM(idx,0)]) * TAC[tt]) + (aux_par[INDEX_PARAM(idx,0)] * IF[tt]);
+				if (TAC[tt] < 0.0) {
+					TAC[tt] = 1e-16;
+				}
 				func[INDEX_VOL_TIME(idx,tt)] += TAC[tt];
+			}
+
+      for (uint tt=0; tt<${T}; ++tt) {
+				jac[INDEX_JAC_TIME(idx,tt,0)] = idx;
+        jac[INDEX_JAC_TIME(idx,tt,1)] = idx;
+        jac[INDEX_JAC_TIME(idx,tt,2)] = idx;
+        jac[INDEX_JAC_TIME(idx,tt,3)] = idx;
+        jac[INDEX_JAC_TIME(idx,tt,4)] = idx;
+        func[INDEX_VOL_TIME(idx,tt)] = idx;
 			}
 			//__syncthreads();
 		}
