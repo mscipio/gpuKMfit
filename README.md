@@ -11,7 +11,7 @@ A couple of local spatial prior are already available (quadratic and Huber). We 
 It uses pyCUDA and cuBLAS python interfaces to parallelize the LM non-linear optimization algorithm.
 Next version will probably switch from pyCUDA to CuPY for CUDA interface in python, but we still need to evaluate (suggestions welcome!)
 
-### TODO (more then tide up everything .. sorry for the mess!)
+### TODO (first of all, tiding up everything .. sorry for the mess!)
 - Add instruction to how to install the library
 - Add instruction of how to use the class
 - Add some ipython notebooks with examples
